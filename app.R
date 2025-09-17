@@ -30,7 +30,9 @@ ui <- shiny::fluidPage(
           # Novo botão para download do DEM
           hr(),
           h4("Baixar Arquivos"),
-          downloadButton("download_uploaded_data", "Baixar Arquivos Processados (zip)")
+          downloadButton("download_model", "Baixar Arquivos Modelados (zip)"),
+          hr(),
+          downloadButton("download_plan", "Baixar Arquivos Planejados (zip)")
         ),
         mainPanel(
           leafletOutput("map_layers", height = "80vh")
@@ -352,7 +354,7 @@ server <- function(input, output, session) {
   
     
   shiny::observeEvent(input$generate_plan, {
-    showNotification("Iniciando a modelagem das bacias. Por favor, aguarde...", duration = NULL, type = "message", id = "basin_prep_notification")
+    showNotification("Iniciando o planejamento de estações e bacias. Por favor, aguarde...", duration = NULL, type = "message", id = "basin_prep_notification")
     
     req(dem_raster())
     req(area_sf(), limite_srtm_sf(), rivers_sf(), waterbodies_sf(), stations_sf())
@@ -361,9 +363,13 @@ server <- function(input, output, session) {
     dir_in <- file.path(tempdir(), "data_in")
     dir.create(dir_in, showWarnings = FALSE)
     
-    # Define o diretório de saída da modelagem das bacias
-    dir_out_bacias <- file.path(tempdir(), "bacias_out")
-    dir.create(dir_out_bacias, showWarnings = FALSE)
+    # # Define o diretório de saída da modelagem das bacias
+    # dir_out_bacias <- file.path(tempdir(), "bacias_out")
+    # dir.create(dir_out_bacias, showWarnings = FALSE)
+
+    # Define o diretório de saída da planejamento das bacias e estações
+    dir_out_plan <- file.path(tempdir(), "plan_out")
+    dir.create(dir_out_plan, showWarnings = FALSE)
     
     # Garante que o shapefile de limite foi carregado e pega o nome do arquivo
     req(input$file_area)
@@ -394,14 +400,14 @@ server <- function(input, output, session) {
     terreno_model <- tryCatch({
       digeoqR::modela_terreno(
         dem = dem_raster(), 
-        dir_out = paste0(dir_out_bacias, "/"), 
+        dir_out = paste0(dir_out_plan, "/"), 
         bases_model = bases_model, 
         modo_excluir = FALSE, 
         EPSG = 4674, 
         threshold = input$threshold, 
         min_length = input$min_length, 
         dist_buffer = input$dist_buffer, 
-        wbt_wd = paste0(dir_out_bacias, "/"), 
+        wbt_wd = paste0(dir_out_plan, "/"), 
         gera_estacoes = TRUE
       )
     }, error = function(e) {
@@ -421,23 +427,23 @@ server <- function(input, output, session) {
                            funcao_snap = input$funcao_snap, 
                            snap_dist = input$snap_dist, 
                            max_ordem = input$max_ordem, 
-                           dir_out = paste0(dir_out_bacias, "/"), 
-                           wbt_wd = paste0(dir_out_bacias, "/"))}, error = function(e) {
+                           dir_out = paste0(dir_out_plan, "/"), 
+                           wbt_wd = paste0(dir_out_plan, "/"))}, error = function(e) {
                              showNotification(paste("Erro durante a modelagem das bacias:", e$message), type = "error")
                              return(NULL)
                            }, finally = {
                              # 4. Remove a notificação de "iniciando"
                              removeNotification(id = "basin_prep_notification")
                            })
-           showNotification("Análise de bacias concluída com sucesso!", type = "message")
+           showNotification("Planejamento das estações e bacias concluído com sucesso!", type = "message")
            req(bacias_plan)
            basins_plan(bacias_plan)
            
-           })
+  })
   
          
-  # Ajuste o seu downloadHandler para usar o argumento 'root'
-  output$download_uploaded_data <- shiny::downloadHandler(
+  # Carrega dados processados - bacias_model
+  output$download_model <- shiny::downloadHandler(
     filename = function() {
       paste0("dados_processados-", Sys.Date(), ".zip")
     },
@@ -472,6 +478,43 @@ server <- function(input, output, session) {
       })
     }
   )
+  # Carrega dados processados - bacias_plan
+  output$download_plan <- shiny::downloadHandler(
+    filename = function() {
+      paste0("dados_plan_processados-", Sys.Date(), ".zip")
+    },
+    content = function(file) {
+      # req(input$file_area, input$file_stations, input$file_rivers, input$file_waterbodies, input$file_limite_srtm)
+      
+      dir_out_plan <- file.path(tempdir(), "plan_out")
+      
+      if (!dir.exists(dir_out_plan) || length(list.files(dir_out_plan)) == 0) {
+        showNotification("Não há arquivos para baixar. Por favor, carregue as camadas primeiro.", type = "warning")
+        return(NULL)
+      }
+      
+      # -----------------------------
+      # Mudança aqui:
+      # Use o argumento 'root' para remover o caminho completo com C:
+      
+      # Obtém apenas os nomes dos arquivos, sem o caminho completo
+      files_to_zip <- list.files(dir_out_plan, full.names = FALSE)
+      
+      # Adicione a checagem de arquivos
+      if (length(files_to_zip) == 0) {
+        showNotification("Não há arquivos para baixar no diretório.", type = "warning")
+        return(NULL)
+      }
+      
+      tryCatch({
+        # Compacta os arquivos, mas a partir do diretório raiz
+        zip::zip(file, files = files_to_zip, root = dir_out_plan)
+      }, error = function(e) {
+        showNotification(paste("Erro ao criar o arquivo ZIP:", e$message), type = "error")
+      })
+    }
+  )
+
 
 }
 
