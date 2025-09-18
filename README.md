@@ -11,8 +11,10 @@ devtools::install_github("vivianeCF/GeochemMapper")
 Para iniciar o aplicativo, basta carregar a biblioteca e executar a função `runApp()`:
 
 ```R
+library(shiny)
 library(GeochemMapper)
-runApp()
+# Executa o aplicativo Shiny a partir da pasta 'inst/shiny' do seu pacote
+shiny::runApp(system.file("shiny", package = "GeochemMapper"))
 ```
 
 ## Dependências
