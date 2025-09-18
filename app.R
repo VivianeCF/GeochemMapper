@@ -197,14 +197,16 @@ server <- function(input, output, session) {
       tagList(
         h4("Ferramenta: Modelar Bacias"),
         p("Esta função irá modelar as bacias de captação para as estações carregadas."),
-        numericInput("threshold", "Threshold", value = 250),
-        numericInput("min_length", "Min Length", value = 0.02),
-        numericInput("dist_buffer", "Dist Buffer", value = 0.01/10),
-        numericInput("classe_am", "Class Sample", value = 2),
-        numericInput("tipo", "Process type", value = 1),
-        numericInput("funcao_snap", "Snap function", value = 1),
-        numericInput("snap_dist", "Snap Distance", value = 0.02),
-        numericInput("max_ordem", "Maximum Order", value = 4),
+        numericInput("threshold", "Limiar da area de captação em pixel.", value = 250),
+        numericInput("min_length", "Comprimento mínimo da drenagem.", value = 0.02),
+        numericInput("dist_buffer", "Distância máxima de busca.", value = 0.01/10),
+        numericInput("classe_am", "Classe da amostra. 1 = concentrado de bateia, 2 = sedimento de corrente, 3 = rocha, 4 = solo", value = 2),
+        numericInput("tipo", "Tipo de processamento do deslocamento. 1: Deslocamento sem controle, 2: controlado pela ordem da drenagem e 3: sem deslocamento.", value = 1),
+        numericInput("funcao_snap", "Função do deslocamento. 1: wbt_jenson_snap_pour_points 2: wbt_snap_pour_points.", value = 1),
+        numericInput("snap_dist", "Distância de deslocamento", value = 0.02),
+        numericInput("max_ordem", "Máxima ordem do rio usado para encontrar a estação deslocada.", value = 4),
+        numericInput("bacia_minima", "Área máxima das bacias planejadas.", value = 1),
+        numericInput("bacia_maxima", "Área mínima das bacias planejadas.", value = 100),
         hr(),
         actionButton("run_basins_model", "Rodar Análise de Bacias"),
       )
@@ -212,19 +214,22 @@ server <- function(input, output, session) {
       tagList(
       h4("Ferramenta: Planejar Estações e Bacias"),
         p("Esta função irá planejar as estações e suas bacias de captação."),
-        numericInput("threshold", "Threshold", value = 250),
-        numericInput("min_length", "Min Length", value = 0.02),
-        numericInput("dist_buffer", "Dist Buffer", value = 0.01/10),
-        numericInput("classe_am", "Class Sample", value = 2),
-        numericInput("tipo", "Process type", value = 1),
-        numericInput("funcao_snap", "Snap function", value = 1),
-        numericInput("snap_dist", "Snap Distance", value = 0.02),
-        numericInput("max_ordem", "Maximum Order", value = 4),
+        numericInput("threshold", "Limiar da area de captação em pixel.", value = 250),
+        numericInput("min_length", "Comprimento mínimo da drenagem.", value = 0.02),
+        numericInput("dist_buffer", "Distância máxima de busca.", value = 0.01/10),
+        numericInput("classe_am", "Classe da amostra. 1 = concentrado de bateia, 2 = sedimento de corrente, 3 = rocha, 4 = solo", value = 2),
+        numericInput("tipo", "Tipo de processamento do deslocamento. 1: Deslocamento sem controle, 2: controlado pela ordem da drenagem e 3: sem deslocamento.", value = 1),
+        numericInput("funcao_snap", "Função do deslocamento. 1: wbt_jenson_snap_pour_points 2: wbt_snap_pour_points.", value = 1),
+        numericInput("snap_dist", "Distância de deslocamento", value = 0.02),
+        numericInput("max_ordem", "Máxima ordem do rio usado para encontrar a estação deslocada.", value = 4),
+        numericInput("bacia_minima", "Área máxima das bacias planejadas.", value = 1),
+        numericInput("bacia_maxima", "Área mínima das bacias planejadas.", value = 100),       
         hr(),
         actionButton("generate_plan", "Gerar Pontos de Planejamento")
       )
     }
   })
+
   # Lógica para rodar o processamento do DEM
   shiny::observeEvent(input$run_gera_dem, {
     
@@ -329,7 +334,9 @@ server <- function(input, output, session) {
     req(terreno_model)
     # Modela as bacias
     bacias_model <- tryCatch({digeoqR::modela_bacias(fase = 2, EPSG = 4674, 
-                                                     dem = dem_raster(), 
+                           bacia_minima = input$bacia_minima, 
+                           bacia_maxima = input$bacia_maxima,
+                           dem = dem_raster(), 
                            bases_model = bases_model, 
                            terreno = terreno_model, 
                            classe_am = input$classe_am,fonte_shp = TRUE, 
@@ -351,8 +358,7 @@ server <- function(input, output, session) {
            basins_model(bacias_model)
            
            })
-  
-    
+      
   shiny::observeEvent(input$generate_plan, {
     showNotification("Iniciando o planejamento de estações e bacias. Por favor, aguarde...", duration = NULL, type = "message", id = "basin_prep_notification")
     
@@ -417,8 +423,12 @@ server <- function(input, output, session) {
     
     req(terreno_model)
     # Modela as bacias
-    bacias_plan <- tryCatch({digeoqR::modela_bacias(fase = 1, EPSG = 4674, 
-                                                     dem = dem_raster(), 
+    bacias_plan <- tryCatch({digeoqR::modela_bacias(
+                           fase = 1, 
+                           bacia_minima = input$bacia_minima, 
+                           bacia_maxima = input$bacia_maxima,
+                           EPSG = 4674, 
+                           dem = dem_raster(), 
                            bases_model = bases_model, 
                            terreno = terreno_model, 
                            classe_am = input$classe_am,fonte_shp = TRUE, 
@@ -440,8 +450,7 @@ server <- function(input, output, session) {
            basins_plan(bacias_plan)
            
   })
-  
-         
+          
   # Carrega dados processados - bacias_model
   output$download_model <- shiny::downloadHandler(
     filename = function() {
@@ -478,6 +487,7 @@ server <- function(input, output, session) {
       })
     }
   )
+  
   # Carrega dados processados - bacias_plan
   output$download_plan <- shiny::downloadHandler(
     filename = function() {
