@@ -1,11 +1,11 @@
 Package: GeochemMapper
-Title: Shiny app for geochemical data analysis
+Title: Shiny app for geochemical mapping
 Description: Shiny app for geochemical data analysis, including DEM preparation, basin modeling, and station planning.
 Version: 0.1.0
-Authors@R: person("Seu Nome", "Seu Sobrenome", email = "seu.email@exemplo.com", role = c("aut", "cre"))
+Authors@R: person("Viviane Carillo Ferrari", email = "seu.email@exemplo.com", role = c("aut", "cre"))
 License: GPL-3
 Depends: R (>= 4.0.0)
 Imports: shiny, sf, leaflet, terra, digeoqR, zip
 Suggests: 
-URL: https://github.com/seu_usuario/seu_repositorio
-BugReports: https://github.com/seu_usuario/seu_repositorio/issues
+URL: https://github.com/VivianeCF/GeochemMapper
+BugReports: https://github.com/VivianeCF/GeochemMapper/issues
