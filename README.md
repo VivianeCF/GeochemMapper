@@ -37,6 +37,6 @@ Contribuições são bem-vindas! Sinta-se à vontade para abrir issues ou pull r
 ## Licença
 Este projeto está licenciado sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.
 ## Autor
-Viviane C. Ferrari - [GitHub](#autor) and [LinkedIn](https://www.linkedin.com/in/vivianecferrari/)
+Viviane C. Ferrari - [GitHub](#autor) and [LinkedIn](https://www.linkedin.com/in/viviane-carillo-ferrari-8aaa6411b/)
 ## Agradecimentos
 Agradecemos a todos que contribuíram para o desenvolvimento deste aplicativo.
